@@ -1,3 +1,5 @@
+let monthEnd = false;
+
 const Table1Stage1 = {
     0: 8231, 30: 18862, 60: 29493, 90: 40124, 120: 50755, 150: 61386, 180: 72017, 210: 82648,
     240: 93279, 270: 103910, 300: 114541, 330: 125172, 360: 135803, 390: 146434, 420: 157065,
@@ -6,14 +8,14 @@ const Table1Stage1 = {
     870: 316530, 900: 327161, 930: 337792, 960: 348423, 990: 359054, 1020: 369685, 1050: 380316,
     1080: 390947, 1110: 401578, 1140: 412209, 1170: 422840, 1200: 433471, 1230: 444102, 1260: 454733,
     1290: 465364, 1320: 475995, 1350: 486626, 1380: 497257, 1410: 507888, 1440: 518519, 1470: 529150,
-    1500: 539781
-};
+    1500: 539781, 1530: 550412, 1560: 561043, 1590: 571674, 1620: 582305, 1650: 592936, 1680: 603567,
+}; //10631
 
 const Table1Stage2 = {
-    1: 0, 2: 354, 3: 709, 4: 1063, 5: 1417, 6: 1772, 7: 2126, 8: 2480, 9: 2835, 10: 3189,
+    1: 1, 2: 355, 3: 709, 4: 1063, 5: 1417, 6: 1772, 7: 2126, 8: 2480, 9: 2835, 10: 3189,
     11: 3544, 12: 3898, 13: 4252, 14: 4607, 15: 4961, 16: 5315, 17: 5670, 18: 6024, 19: 6378,
     20: 6733, 21: 7087, 22: 7442, 23: 7796, 24: 8150, 25: 8505, 26: 8859, 27: 9213, 28: 9568,
-    29: 9922, 30: 10277
+    29: 9922, 30: 10277, 
 };
 
 const Table1Stage3v1 = {
@@ -40,14 +42,15 @@ const Table1Stage3v2 = {
 const Table2Stage1 = {
     600: 0, 700: 36525, 800: 73050, 900: 109575, 1000: 146100, 1100: 182625,
     1200: 219150, 1300: 255675, 1400: 292200, 1500: 328725, 1582: 358665,
-    1600: 365240, 1700: 401764, 1800: 438288, 1900: 474812, 2000: 511337
+    1600: 365240, 1700: 401764, 1800: 438288, 1900: 474812, 2000: 511337,
+    2100: 547861, 2200: 584385, 2300: 620909, 2400: 657433, 2500: 693958,
 };
 
 const Table2Stage2 = {
     4: 1461, 8: 2922, 12: 4383, 16: 5844, 20: 7305, 24: 8766, 28: 10227, 32: 11688,
     36: 13149, 40: 14610, 44: 16071, 48: 17532, 52: 18993, 56: 20454, 60: 21915,
     64: 23376, 68: 24837, 72: 26298, 76: 27759, 80: 29220, 84: 30681, 88: 32142,
-    92: 33603, 96: 35064
+    92: 33603, 96: 35064, 100: 36525, 104: 37986, 108: 39447, 112: 40908, 116: 42369,
 };
 
 const Table2Stage3v1 = {
@@ -122,22 +125,37 @@ const convertToArabicDigits = (input) => {
     let result = '';
     let ignoreLeadingZero = true;
 
-    for (const char of input) {
-        if (char.match(/\d/)) {
-            if (char !== '0') {
+    try {
+        for (const char of input) {
+            if (char.match(/\d/) !== null) {
+                if (char !== '0' || !ignoreLeadingZero) {
+                    ignoreLeadingZero = false;
+                    const arabicDigit = enToArabic[parseInt(char)];
+                    result += arabicDigit;
+                } else if (!ignoreLeadingZero) {
+                    result += enToArabic[parseInt(char)];
+                }
+            } else {
+                result += char;
                 ignoreLeadingZero = false;
-                const arabicDigit = enToArabic[parseInt(char)];
-                result += arabicDigit;
-            } else if (!ignoreLeadingZero) {
-                result += enToArabic[parseInt(char)];
             }
-        } else {
-            result += char;
-            ignoreLeadingZero = false;
         }
+        monthEnd = false;
+    }
+    catch (e) {
+        monthEnd = true
     }
 
     return result;
+}
+
+function isLeapYearMisriHijri(misryYear) {
+    const baseYear = 1420; // The base year for the Kuwaiti algorithm
+    const leapYearPattern = [2, 5, 8, 10, 13, 16, 18, 21, 24, 26, 29]; // Leap year pattern
+  
+    // Check if the year is a leap year based on the Kuwaiti algorithm
+    const position = (misryYear - baseYear) % 30;
+    return leapYearPattern.includes(position);
 }
 
 module.exports = {
@@ -167,31 +185,38 @@ module.exports = {
         const mYear = parseInt(mCentury[0]) + parseInt(mCenturyYear[0]);
 
         const mMonthOrdinalDifference = mYearOrdinalDifference - nearestLowerKeyForMYear;
-        const nearestLowerKeyForMMonth = Math.max(...Object.values(Table1Stage3v1).filter(value => value <= mMonthOrdinalDifference));
+        const nearestLowerKeyForMMonth = Math.max(...Object.values(Table1Stage3v1).filter(value => value <= mMonthOrdinalDifference-1));
         const mMonth = Object.keys(Table1Stage3v1).find(key => Table1Stage3v1[key] === nearestLowerKeyForMMonth);
 
-        const mDay = mMonthOrdinalDifference - nearestLowerKeyForMMonth;
-
+        let mDay = mMonthOrdinalDifference - nearestLowerKeyForMMonth;
         const monthNumber = arabic_month_number[mMonth];
-
-        // Convert values to Arabic digits
-        const convertedValues = {
-            misDay: mDay.toString(),
-            misMonth: arabic_to_english_month[mMonth],
-            misYear: mYear.toString(),
-            arabic_misDay: convertToArabicDigits(mDay.toString()),
-            arabic_misMonth: convertToArabicDigits(mMonth),
-            arabic_misYear: convertToArabicDigits(mYear.toString()),
-            misMonthNumber: monthNumber.toString(),
-            arabic_monthNumber: convertToArabicDigits(monthNumber.toString())
-        };
-
-        return {
-            misriDatev1: `${convertToArabicDigits(mDay.toString())} ${mMonth} ${convertToArabicDigits(mYear.toString())}`,
-            misriDatev2: `${mDay}-${monthNumber}-${mYear}`,
-            gregDate: gregDate,
-            ...convertedValues
-        };
+        try {
+            const convertedValues = {
+                misDay: mDay.toString(),
+                misMonth: arabic_to_english_month[mMonth],
+                misYear: mYear.toString(),
+                arabic_misDay: convertToArabicDigits(mDay.toString()),
+                arabic_misMonth: convertToArabicDigits(mMonth),
+                arabic_misYear: convertToArabicDigits(mYear.toString()),
+                misMonthNumber: monthNumber.toString(),
+                arabic_monthNumber: convertToArabicDigits(monthNumber.toString())
+            };
+            return {
+                misriDatev1: `${convertToArabicDigits(mDay.toString())} ${mMonth} ${convertToArabicDigits(mYear.toString())}`,
+                misriDatev2: `${mDay}-${monthNumber}-${mYear}`,
+                gregDate: gregDate,
+                ...convertedValues
+            };
+        } catch (e) {
+            const leapDay = isLeapYearMisriHijri(mYear) ? 30 : 29;
+            return {
+                misriDatev1: `${convertToArabicDigits((leapDay).toString())} ذو الحجة الحرام ${convertToArabicDigits((mYear-1).toString())}`,
+                misriDatev2: `${leapDay}-${monthNumber}-${mYear-1}`,
+                gregDate: gregDate,
+                misMonthNumber: "12",
+                arabic_monthNumber: convertToArabicDigits("12")
+            };
+        }
     },
 
     MisriToGreg: function (day, month, year) {
