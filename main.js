@@ -269,11 +269,3 @@ module.exports = {
 //"Shawwal"
 //"Dhul Qada"
 //"Dhul Hajja"
-
-const gregDate = "01-01-2021";
-const dateParts = gregDate.split("-")
-const day = dateParts[0].padStart(2, '0')
-const month = dateParts[1].padStart(2, '0')
-const year = dateParts[2]
-const mDate = module.exports.GregToMisri(day, month, year);
-console.log(mDate);
